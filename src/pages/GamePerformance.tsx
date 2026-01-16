@@ -577,11 +577,11 @@ const GamePerformance = () => {
       
       try {
         // Fetch team statistics
-        const teamData = await gamePerformanceService.fetchTeamStats(
-          clubId,
-          selectedYear === 'all' ? new Date().getFullYear() : parseInt(selectedYear),
-          selectedMonth === 'all' ? 'all' : parseInt(selectedMonth)
-        );
+          const teamData = await gamePerformanceService.fetchTeamStats(
+            clubId,
+            selectedYear === 'all' ? 'all' : parseInt(selectedYear),
+            selectedMonth === 'all' ? 'all' : parseInt(selectedMonth)
+          );
         setTeamStats(teamData);
         
         // Fetch player statistics
