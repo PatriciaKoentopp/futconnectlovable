@@ -138,6 +138,7 @@ const ListaSocios = () => {
   const [members, setMembers] = useState<MemberListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedMember, setSelectedMember] = useState<FormattedMember | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -243,14 +244,15 @@ const ListaSocios = () => {
     fetchSponsors();
   }, [fetchMembers, fetchSponsors]);
   
-  // Filter members based on search query
+  // Filter members based on search query and status
   const filteredMembers = members.filter(member => {
     const searchLower = searchQuery.toLowerCase();
-    return (
+    const matchesSearch = (
       member.name.toLowerCase().includes(searchLower) ||
-      (member.nickname && member.nickname.toLowerCase().includes(searchLower)) ||
-      member.status.toLowerCase().includes(searchLower)
+      (member.nickname && member.nickname.toLowerCase().includes(searchLower))
     );
+    const matchesStatus = statusFilter === 'all' || member.status === statusFilter;
+    return matchesSearch && matchesStatus;
   });
   
   // Handle opening member detail view
@@ -622,15 +624,29 @@ const ListaSocios = () => {
       <Card>
         <CardHeader className="pb-3">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="relative w-full md:w-96">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-              <Input
-                type="search"
-                placeholder="Buscar por nome ou apelido..."
-                className="pl-9"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+            <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+              <div className="relative w-full md:w-96">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                <Input
+                  type="search"
+                  placeholder="Buscar por nome ou apelido..."
+                  className="pl-9"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full sm:w-[140px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="Ativo">Ativo</SelectItem>
+                  <SelectItem value="Suspenso">Suspenso</SelectItem>
+                  <SelectItem value="Inativo">Inativo</SelectItem>
+                  <SelectItem value="Sistema">Sistema</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex items-center gap-2">
               {canEdit && (
