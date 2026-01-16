@@ -161,7 +161,9 @@ const ConfirmationModal = ({ isOpen, onClose, gameId, userId, gameStatus, onConf
 
   const confirmed = members.filter(m => m.status === 'confirmed');
   const declined = members.filter(m => m.status === 'declined');
-  const unconfirmed = members.filter(m => m.status === 'unconfirmed');
+  const unconfirmed = members
+    .filter(m => m.status === 'unconfirmed')
+    .sort((a, b) => a.nickname.localeCompare(b.nickname, 'pt-BR'));
 
   const canUpdateParticipation = gameStatus === 'Agendado';
 
