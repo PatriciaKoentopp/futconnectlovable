@@ -23,10 +23,6 @@
         document.write('<script src="https://cdn.jsdelivr.net/npm/es6-object-assign@1.1.0/dist/object-assign-auto.min.js"><\/script>');
       }
       
-      // Log do User Agent
-      window.onload = function() {
-        document.getElementById('user-agent').innerText = navigator.userAgent;
-      }
     </script>
     <style>
       #error-container {
@@ -50,8 +46,6 @@
   </head>
   <body>
     <div id="error-container">
-      <strong>Debug Info:</strong>
-      <div id="user-agent"></div>
       <div id="error-info"></div>
     </div>
     <div id="root">
