@@ -166,8 +166,6 @@ const Sponsors = () => {
   const [weekOfMonth, setWeekOfMonth] = useState<string>('1'); // Default to first week
   const [numberOfEvents, setNumberOfEvents] = useState<string>('6'); // Default to 6 events
   
-  // Reference to the events table for printing
-  const eventsTableRef = useRef<HTMLDivElement>(null);
   
   const { toast } = useToast();
   const { user } = useAuth();
@@ -967,9 +965,6 @@ const Sponsors = () => {
   
   // Function to print the events list
   const handlePrintEvents = () => {
-    // Save current body style
-    const originalBodyStyle = document.body.style.cssText;
-    
     // Create a new window for printing
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
@@ -985,8 +980,38 @@ const Sponsors = () => {
     const currentDate = new Date();
     const formattedDate = format(currentDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
     
-    // Get table content
-    const tableContent = eventsTableRef.current?.innerHTML || '';
+    // Build the table rows from filtered events
+    const tableRows = filteredEvents.map(event => `
+      <tr>
+        <td>${formatDisplayDate(event.date)}</td>
+        <td>${event.sponsor_name}</td>
+        <td>${event.event_type}</td>
+        <td>
+          <span class="status-badge ${event.status === 'Realizado' ? 'status-realizado' : 'status-agendado'}">
+            ${event.status}
+          </span>
+        </td>
+        <td>${event.description || '-'}</td>
+      </tr>
+    `).join('');
+    
+    // Generate the complete table HTML
+    const tableContent = `
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Patrocinador</th>
+            <th>Tipo</th>
+            <th>Status</th>
+            <th>Descrição</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tableRows}
+        </tbody>
+      </table>
+    `;
     
     // Write the print-friendly HTML to the new window
     printWindow.document.write(`
@@ -1099,12 +1124,11 @@ const Sponsors = () => {
           ${tableContent}
           
           <div class="report-footer">
-            <p> 2023 FutConnect - Todos os direitos reservados</p>
+            <p>© 2024 FutConnect - Todos os direitos reservados</p>
             <p>Relatório gerado automaticamente pelo sistema</p>
           </div>
           
           <script>
-            // Auto print and close if needed
             window.onload = function() {
               setTimeout(function() {
                 window.print();
@@ -1118,9 +1142,6 @@ const Sponsors = () => {
     // Finish writing and focus the print window
     printWindow.document.close();
     printWindow.focus();
-    
-    // Restore original body style
-    document.body.style.cssText = originalBodyStyle;
   };
   
   return (
