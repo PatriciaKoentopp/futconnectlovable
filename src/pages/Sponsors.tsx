@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
+import { useYearFilter } from '@/hooks/useYearFilter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -154,9 +155,7 @@ const Sponsors = () => {
   const [batchEventType, setBatchEventType] = useState('');
   const [isGeneratingBatch, setIsGeneratingBatch] = useState(false);
   
-  // Novos estados para filtros de ano e mês
-  const [availableYears, setAvailableYears] = useState<number[]>([]);
-  const [selectedYear, setSelectedYear] = useState<string>(getYear(new Date()).toString());
+  // Filtro de mês
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
   
   // New state variables for advanced batch event generation
@@ -172,6 +171,9 @@ const Sponsors = () => {
   const { canEdit } = useAuthorization();
   const queryClient = useQueryClient();
   const clubId = user?.activeClub?.id || '';
+  
+  // Hook para filtro de ano - inicia com ano atual
+  const { selectedYear, setSelectedYear, availableYears } = useYearFilter(clubId);
 
   const {
     register,
@@ -240,27 +242,6 @@ const Sponsors = () => {
     },
     enabled: !!clubId
   });
-  
-  // Determinar os anos disponíveis para filtro com base nos eventos
-  useEffect(() => {
-    if (eventsData.length > 0) {
-      const years = eventsData.map(event => getYear(parseISO(event.date)));
-      const uniqueYears = Array.from(new Set(years)).sort();
-      setAvailableYears(uniqueYears);
-      
-      // Se não houver ano selecionado, usar o ano atual
-      if (selectedYear === 'all') {
-        const currentYear = getYear(new Date()).toString();
-        // Verifica se o ano atual está disponível nos eventos
-        if (uniqueYears.includes(Number(currentYear))) {
-          setSelectedYear(currentYear);
-        } else {
-          // Se o ano atual não estiver disponível, usa o ano mais recente
-          setSelectedYear(Math.max(...uniqueYears).toString());
-        }
-      }
-    }
-  }, [eventsData]);
   
   // Fetch event types
   const { 
@@ -1208,10 +1189,9 @@ const Sponsors = () => {
                 <SelectValue placeholder="Ano" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
                 {availableYears.map((year) => (
-                  <SelectItem key={year} value={year.toString()}>
-                    {year}
+                  <SelectItem key={year} value={year}>
+                    {year === "all" ? "Todos" : year}
                   </SelectItem>
                 ))}
               </SelectContent>
