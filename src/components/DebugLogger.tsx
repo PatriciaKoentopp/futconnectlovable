@@ -54,9 +54,8 @@ const DebugLogger = () => {
     setLogs(prev => [...prev, { type, message, timestamp: new Date() }]);
   };
 
-  if (!import.meta.env.DEV) {
-    return null;
-  }
+  // Sempre ocultar em produção - retorna null independente do ambiente
+  return null;
 
   return (
     <div
