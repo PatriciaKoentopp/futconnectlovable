@@ -159,8 +159,12 @@ const ConfirmationModal = ({ isOpen, onClose, gameId, userId, gameStatus, onConf
   const [isConfirming, setIsConfirming] = useState(false);
   const [isDeclining, setIsDeclining] = useState(false);
 
-  const confirmed = members.filter(m => m.status === 'confirmed');
-  const declined = members.filter(m => m.status === 'declined');
+  const confirmed = members
+    .filter(m => m.status === 'confirmed')
+    .sort((a, b) => a.nickname.localeCompare(b.nickname, 'pt-BR'));
+  const declined = members
+    .filter(m => m.status === 'declined')
+    .sort((a, b) => a.nickname.localeCompare(b.nickname, 'pt-BR'));
   const unconfirmed = members
     .filter(m => m.status === 'unconfirmed')
     .sort((a, b) => a.nickname.localeCompare(b.nickname, 'pt-BR'));
