@@ -52,7 +52,7 @@ interface DateFilter {
 }
 
 export const gamePerformanceService = {
-  async fetchTeamStats(clubId: string, year: number, month: number | 'all'): Promise<TeamStats[]> {
+  async fetchTeamStats(clubId: string, year: number | 'all', month: number | 'all'): Promise<TeamStats[]> {
     try {
       // 1. Primeiro, buscar as configurações de times do clube
       const { data: teamConfigurations, error: configError } = await supabase
@@ -69,14 +69,26 @@ export const gamePerformanceService = {
         .select('*, games!inner(club_id)')
         .eq('games.club_id', clubId);
 
-      // Aplicar filtro de data apenas se não for 'all'
+    // Aplicar filtro de ano (quando year não for 'all')
+    if (year !== 'all') {
+      const yearNum = typeof year === 'number' ? year : parseInt(year);
       if (month !== 'all') {
-        const startDate = new Date(year, month - 1, 1).toISOString();
-        const endDate = new Date(year, month, 0).toISOString();
+        // Filtrar por ano E mês
+        const monthNum = typeof month === 'number' ? month : parseInt(month);
+        const startDate = new Date(yearNum, monthNum - 1, 1).toISOString();
+        const endDate = new Date(yearNum, monthNum, 0).toISOString();
         query = query
-          .gte('games.created_at', startDate)
-          .lt('games.created_at', endDate);
+          .gte('games.date', startDate)
+          .lt('games.date', endDate);
+      } else {
+        // Filtrar apenas por ano
+        const startDate = new Date(yearNum, 0, 1).toISOString();
+        const endDate = new Date(yearNum, 11, 31, 23, 59, 59).toISOString();
+        query = query
+          .gte('games.date', startDate)
+          .lte('games.date', endDate);
       }
+    }
 
       const { data: gameEvents, error: eventsError } = await query;
 
@@ -198,23 +210,29 @@ export const gamePerformanceService = {
         .eq('games.club_id', clubId)
         .not('event_type', 'is', null);
 
-      // Aplicar filtro de data apenas se não for 'all'
-      if (year !== 'all' && month !== 'all') {
-        const startDate = new Date(
-          typeof year === 'string' ? parseInt(year) : year,
-          typeof month === 'string' ? parseInt(month) - 1 : month - 1,
-          1
-        ).toISOString();
-        const endDate = new Date(
-          typeof year === 'string' ? parseInt(year) : year,
-          typeof month === 'string' ? parseInt(month) : month,
-          0
-        ).toISOString();
-
+    // Aplicar filtro de data
+    if (year !== 'all') {
+      const yearNum = typeof year === 'string' ? parseInt(year) : year;
+      
+      if (month !== 'all') {
+        // Filtrar por ano E mês
+        const monthNum = typeof month === 'string' ? parseInt(month) : month;
+        const startDate = new Date(yearNum, monthNum - 1, 1).toISOString();
+        const endDate = new Date(yearNum, monthNum, 0).toISOString();
+        
         eventsQuery = eventsQuery
-          .gte('games.created_at', startDate)
-          .lt('games.created_at', endDate);
+          .gte('games.date', startDate)
+          .lt('games.date', endDate);
+      } else {
+        // Filtrar apenas por ano
+        const startDate = new Date(yearNum, 0, 1).toISOString();
+        const endDate = new Date(yearNum, 11, 31, 23, 59, 59).toISOString();
+        
+        eventsQuery = eventsQuery
+          .gte('games.date', startDate)
+          .lte('games.date', endDate);
       }
+    }
 
       const { data: gamesWithEvents, error: eventsError } = await eventsQuery;
       if (eventsError) {
