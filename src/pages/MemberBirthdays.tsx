@@ -4,8 +4,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Cake, Calendar } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Cake, Calendar, Share2 } from 'lucide-react';
 import { useMemberBirthdaysFullYear } from '@/hooks/useMemberBirthdaysFullYear';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 const MONTHS = [
   { value: '1', label: 'Janeiro' },
@@ -26,11 +29,57 @@ const MemberBirthdays = () => {
   const currentMonth = new Date().getMonth() + 1;
   const currentDay = new Date().getDate();
   const [selectedMonth, setSelectedMonth] = useState<string>(currentMonth.toString());
+  const [generatedMessage, setGeneratedMessage] = useState('');
   
+  const { toast } = useToast();
+  const { user } = useAuth();
   const { data: birthdaysByMonth, isLoading } = useMemberBirthdaysFullYear();
 
   const selectedMonthBirthdays = birthdaysByMonth?.[Number(selectedMonth)] || [];
   const selectedMonthName = MONTHS.find(m => m.value === selectedMonth)?.label || '';
+
+  const generateBirthdayMessage = () => {
+    if (selectedMonthBirthdays.length === 0) {
+      toast({
+        title: "Sem Aniversariantes",
+        description: `Não há aniversariantes em ${selectedMonthName}.`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const intro = `🎂 Aniversariantes de ${selectedMonthName} - ${user?.activeClub?.name || 'Clube'}\n\n`;
+    
+    const birthdayList = selectedMonthBirthdays
+      .map(member => {
+        const displayName = member.nickname || member.name;
+        return `🎈 ${String(member.day).padStart(2, '0')}/${selectedMonth.padStart(2, '0')} - ${displayName}`;
+      })
+      .join('\n');
+
+    const outro = `\n\nParabéns a todos! 🎉🥳`;
+    
+    setGeneratedMessage(`${intro}${birthdayList}${outro}`);
+    
+    toast({
+      title: "Mensagem Gerada!",
+      description: "A mensagem está pronta para ser compartilhada.",
+    });
+  };
+
+  const shareViaWhatsApp = () => {
+    if (!generatedMessage) {
+      toast({
+        title: "Sem mensagem",
+        description: "Gere a mensagem primeiro antes de compartilhar.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const message = encodeURIComponent(generatedMessage);
+    window.open(`https://wa.me/?text=${message}`, '_blank');
+  };
 
   const isBirthdayToday = (day: number, month: number) => {
     return day === currentDay && month === currentMonth;
@@ -54,7 +103,7 @@ const MemberBirthdays = () => {
         </div>
         
         <div className="flex items-center gap-2">
-          <Calendar className="h-5 w-5 text-gray-500" />
+          <Calendar className="h-5 w-5 text-muted-foreground" />
           <Select value={selectedMonth} onValueChange={setSelectedMonth}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Selecione o mês" />
@@ -70,6 +119,15 @@ const MemberBirthdays = () => {
               })}
             </SelectContent>
           </Select>
+          <Button
+            onClick={generateBirthdayMessage}
+            disabled={selectedMonthBirthdays.length === 0}
+            variant="outline"
+            className="gap-2"
+          >
+            <Share2 className="h-4 w-4" />
+            Gerar Mensagem
+          </Button>
         </div>
       </div>
 
@@ -141,6 +199,25 @@ const MemberBirthdays = () => {
           )}
         </CardContent>
       </Card>
+
+      {generatedMessage && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Mensagem Gerada</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="whitespace-pre-wrap p-4 bg-muted rounded-lg">
+                {generatedMessage}
+              </div>
+              <Button onClick={shareViaWhatsApp} className="w-full gap-2">
+                <Share2 className="h-4 w-4" />
+                Compartilhar no WhatsApp
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
