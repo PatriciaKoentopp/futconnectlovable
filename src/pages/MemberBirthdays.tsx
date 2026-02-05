@@ -52,8 +52,7 @@ const MemberBirthdays = () => {
     
     const birthdayList = selectedMonthBirthdays
       .map(member => {
-        const displayName = member.nickname || member.name;
-        return `🎈 ${String(member.day).padStart(2, '0')}/${selectedMonth.padStart(2, '0')} - ${displayName}`;
+        return `🎈 ${String(member.day).padStart(2, '0')}/${selectedMonth.padStart(2, '0')} - ${member.name}`;
       })
       .join('\n');
 
