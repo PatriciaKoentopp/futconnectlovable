@@ -39,6 +39,7 @@ import GameConfirmation from "./pages/GameConfirmation";
 import ConfirmationSuccess from "./pages/ConfirmationSuccess";
 import Sponsors from "./pages/Sponsors";
 import UserGuide from "./pages/UserGuide";
+import MemberClubAnniversaries from "./pages/MemberClubAnniversaries";
 import { StatutePage } from "@/pages/club/documents/StatutePage";
 import { AnthemPage } from "@/pages/club/documents/AnthemPage";
 import { InvitationPage } from "@/pages/club/documents/InvitationPage";
@@ -199,6 +200,13 @@ const App = () => (
                 <ProtectedRoute>
                   <AdminLayout appMode="club">
                     <MemberBirthdays />
+                  </AdminLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/members/club-anniversaries" element={
+                <ProtectedRoute>
+                  <AdminLayout appMode="club">
+                    <MemberClubAnniversaries />
                   </AdminLayout>
                 </ProtectedRoute>
               } />
