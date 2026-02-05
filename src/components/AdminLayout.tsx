@@ -44,10 +44,14 @@ const clubNavItems = [{
     name: 'Perfil de Sócios',
     path: '/members/profile',
     icon: <UserCog size={16} />
-  }, {
+}, {
     name: 'Estatísticas de Sócios',
     path: '/members/statistics',
     icon: <BarChart size={16} />
+  }, {
+    name: 'Aniversariantes',
+    path: '/members/birthdays',
+    icon: <Calendar size={16} />
   }, {
     name: 'Patrocinador',
     path: '/sponsors',
