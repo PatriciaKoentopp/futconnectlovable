@@ -19,6 +19,7 @@ import NovoSocio from "./pages/NovoSocio";
 import ListaSocios from "./pages/ListaSocios";
 import MemberProfile from "./pages/MemberProfile";
 import MemberStatistics from "./pages/MemberStatistics";
+import MemberBirthdays from "./pages/MemberBirthdays";
 import Games from "./pages/Games";
 import GamePanel from "./pages/GamePanel";
 import GamePerformance from "./pages/GamePerformance";
@@ -191,6 +192,13 @@ const App = () => (
                 <ProtectedRoute>
                   <AdminLayout appMode="club">
                     <MemberStatistics />
+                  </AdminLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/members/birthdays" element={
+                <ProtectedRoute>
+                  <AdminLayout appMode="club">
+                    <MemberBirthdays />
                   </AdminLayout>
                 </ProtectedRoute>
               } />
