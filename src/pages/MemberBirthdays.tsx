@@ -38,27 +38,61 @@ const MemberBirthdays = () => {
   const selectedMonthBirthdays = birthdaysByMonth?.[Number(selectedMonth)] || [];
   const selectedMonthName = MONTHS.find(m => m.value === selectedMonth)?.label || '';
 
-  const generateBirthdayMessage = () => {
-    if (selectedMonthBirthdays.length === 0) {
-      toast({
-        title: "Sem Aniversariantes",
-        description: `Não há aniversariantes em ${selectedMonthName}.`,
-        variant: "destructive"
-      });
-      return;
+  const generateBirthdayMessage = (allMonths: boolean = false) => {
+    if (allMonths) {
+      const hasAnyBirthday = Object.values(birthdaysByMonth || {}).some(members => members.length > 0);
+      
+      if (!hasAnyBirthday) {
+        toast({
+          title: "Sem Aniversariantes",
+          description: "Não há aniversariantes cadastrados.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const intro = `🎂 Aniversariantes do Ano - ${user?.activeClub?.name || 'Clube'}\n`;
+      
+      const allMonthsList = MONTHS
+        .map(month => {
+          const monthMembers = birthdaysByMonth?.[Number(month.value)] || [];
+          if (monthMembers.length === 0) return null;
+          
+          const monthHeader = `\n📅 ${month.label.toUpperCase()}\n`;
+          const membersList = monthMembers
+            .map(member => `🎈 ${String(member.day).padStart(2, '0')}/${month.value.padStart(2, '0')} - ${member.name}`)
+            .join('\n');
+          
+          return `${monthHeader}${membersList}`;
+        })
+        .filter(Boolean)
+        .join('\n');
+
+      const outro = `\n\nParabéns a todos! 🎉🥳`;
+      
+      setGeneratedMessage(`${intro}${allMonthsList}${outro}`);
+    } else {
+      if (selectedMonthBirthdays.length === 0) {
+        toast({
+          title: "Sem Aniversariantes",
+          description: `Não há aniversariantes em ${selectedMonthName}.`,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const intro = `🎂 Aniversariantes de ${selectedMonthName} - ${user?.activeClub?.name || 'Clube'}\n\n`;
+      
+      const birthdayList = selectedMonthBirthdays
+        .map(member => {
+          return `🎈 ${String(member.day).padStart(2, '0')}/${selectedMonth.padStart(2, '0')} - ${member.name}`;
+        })
+        .join('\n');
+
+      const outro = `\n\nParabéns a todos! 🎉🥳`;
+      
+      setGeneratedMessage(`${intro}${birthdayList}${outro}`);
     }
-
-    const intro = `🎂 Aniversariantes de ${selectedMonthName} - ${user?.activeClub?.name || 'Clube'}\n\n`;
-    
-    const birthdayList = selectedMonthBirthdays
-      .map(member => {
-        return `🎈 ${String(member.day).padStart(2, '0')}/${selectedMonth.padStart(2, '0')} - ${member.name}`;
-      })
-      .join('\n');
-
-    const outro = `\n\nParabéns a todos! 🎉🥳`;
-    
-    setGeneratedMessage(`${intro}${birthdayList}${outro}`);
     
     toast({
       title: "Mensagem Gerada!",
@@ -119,13 +153,21 @@ const MemberBirthdays = () => {
             </SelectContent>
           </Select>
           <Button
-            onClick={generateBirthdayMessage}
+            onClick={() => generateBirthdayMessage(false)}
             disabled={selectedMonthBirthdays.length === 0}
             variant="outline"
             className="gap-2"
           >
             <Share2 className="h-4 w-4" />
-            Gerar Mensagem
+            Gerar Mês
+          </Button>
+          <Button
+            onClick={() => generateBirthdayMessage(true)}
+            variant="outline"
+            className="gap-2"
+          >
+            <Calendar className="h-4 w-4" />
+            Gerar Ano
           </Button>
         </div>
       </div>
