@@ -1,136 +1,169 @@
 
 
-# Plano: Criar Pagina de Aniversariantes por Mes
+# Plano: Adicionar Compartilhamento de Aniversariantes via WhatsApp
 
 ## Objetivo
 
-Criar uma nova rotina no menu "Socios" para listar os aniversariantes do clube organizados por mes, permitindo visualizar todos os 12 meses do ano.
+Adicionar funcionalidade de gerar e compartilhar mensagem de aniversariantes via WhatsApp na pagina de aniversariantes, seguindo o mesmo padrao visual e comportamento da pagina de alertas de ausencia.
 
-## Estrutura Atual
+## Modelo de Referencia
 
-O projeto ja possui:
-- Hook `useMemberBirthdays.ts` - busca aniversarios do mes atual ate dezembro
-- Componente `BirthdayCard.tsx` - exibe aniversariantes em formato de card compacto
-- Menu de Socios em `AdminLayout.tsx` com submenu
+A pagina `GameAbsenceAlerts.tsx` (linhas 138-175) possui:
+1. Estado `generatedMessage` para armazenar a mensagem
+2. Funcao `generateWhatsAppMessage()` para criar o texto
+3. Funcao `shareViaWhatsApp()` para abrir o WhatsApp
+4. Botao "Gerar Alerta" no cabecalho
+5. Card com preview da mensagem e botao "Compartilhar no WhatsApp"
+
+## Arquivo a Modificar
+
+`src/pages/MemberBirthdays.tsx`
 
 ## Alteracoes Necessarias
 
-### 1. Criar novo hook para buscar aniversarios do ano completo
-
-**Arquivo:** `src/hooks/useMemberBirthdaysFullYear.ts`
-
-O hook atual (`useMemberBirthdays`) filtra apenas do mes atual ate dezembro. O novo hook buscara aniversariantes de todos os 12 meses para uma visualizacao completa.
-
-```text
-+-- useMemberBirthdaysFullYear.ts
-    - Busca todos os membros ativos com data de nascimento
-    - Agrupa por mes (1-12)
-    - Ordena por dia dentro de cada mes
-    - Retorna dados com apelido e foto do socio
-```
-
-### 2. Criar pagina de listagem de aniversariantes
-
-**Arquivo:** `src/pages/MemberBirthdays.tsx`
-
-Uma pagina completa com:
-
-```text
-+-- MemberBirthdays.tsx
-    |
-    +-- Cabecalho com titulo "Aniversariantes"
-    |
-    +-- Seletor de mes (dropdown ou abas)
-    |
-    +-- Tabela com colunas:
-    |   - Foto/Avatar
-    |   - Nome
-    |   - Apelido
-    |   - Dia do aniversario
-    |
-    +-- Indicador visual para aniversariante de hoje
-    |
-    +-- Contador de aniversariantes por mes
-```
-
-### 3. Adicionar item no menu de Socios
-
-**Arquivo:** `src/components/AdminLayout.tsx`
-
-Adicionar novo item no submenu de "Socios":
-
-```text
-Socios (submenu atual)
-├── Novo Socio
-├── Lista de Socios
-├── Perfil de Socios
-├── Estatisticas de Socios
-├── Aniversariantes  <-- NOVO ITEM
-└── Patrocinador
-```
-
-### 4. Adicionar rota no App.tsx
-
-**Arquivo:** `src/App.tsx`
-
-Nova rota protegida:
-
-```text
-/members/birthdays --> MemberBirthdays
-```
-
-## Detalhes Tecnicos
-
-### Hook useMemberBirthdaysFullYear
+### 1. Adicionar imports necessarios
 
 ```typescript
-// Busca membros ativos com birth_date
-// Inclui: id, name, nickname, birth_date, photo_url
-// Agrupa por mes (1-12)
-// Ordena por dia dentro de cada mes
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/components/ui/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { Share2 } from 'lucide-react';
 ```
 
-### Componentes utilizados
+### 2. Adicionar estado e hooks
 
-- `Card` e `Table` do shadcn/ui para layout
-- `Avatar` para fotos dos socios
-- `Badge` para destacar aniversariante de hoje
-- `Select` para selecao de mes
+```typescript
+const { toast } = useToast();
+const { user } = useAuth();
+const [generatedMessage, setGeneratedMessage] = useState('');
+```
 
-### Fluxo de dados
+### 3. Criar funcao para gerar mensagem
+
+```typescript
+const generateBirthdayMessage = () => {
+  if (selectedMonthBirthdays.length === 0) {
+    toast({
+      title: "Sem Aniversariantes",
+      description: `Nao ha aniversariantes em ${selectedMonthName}.`,
+      variant: "destructive"
+    });
+    return;
+  }
+
+  const intro = `🎂 Aniversariantes de ${selectedMonthName} - ${user?.activeClub?.name}\n\n`;
+  
+  const birthdayList = selectedMonthBirthdays
+    .map(member => {
+      const displayName = member.nickname || member.name;
+      return `🎈 ${String(member.day).padStart(2, '0')}/${selectedMonth.padStart(2, '0')} - ${displayName}`;
+    })
+    .join('\n');
+
+  const outro = `\n\nParabens a todos! 🎉🥳`;
+  
+  setGeneratedMessage(`${intro}${birthdayList}${outro}`);
+  
+  toast({
+    title: "Mensagem Gerada!",
+    description: "A mensagem esta pronta para ser compartilhada.",
+  });
+};
+```
+
+### 4. Criar funcao para compartilhar no WhatsApp
+
+```typescript
+const shareViaWhatsApp = () => {
+  if (!generatedMessage) {
+    toast({
+      title: "Sem mensagem",
+      description: "Gere a mensagem primeiro antes de compartilhar.",
+      variant: "destructive"
+    });
+    return;
+  }
+
+  const message = encodeURIComponent(generatedMessage);
+  window.open(`https://wa.me/?text=${message}`, '_blank');
+};
+```
+
+### 5. Adicionar botao no cabecalho
+
+Adicionar botao "Gerar Mensagem" ao lado do seletor de mes:
+
+```typescript
+<Button
+  onClick={generateBirthdayMessage}
+  disabled={selectedMonthBirthdays.length === 0}
+  variant="outline"
+  className="gap-2"
+>
+  <Share2 className="h-4 w-4" />
+  Gerar Mensagem
+</Button>
+```
+
+### 6. Adicionar card com preview da mensagem
+
+Apos a tabela de aniversariantes, adicionar o card de preview (mesmo padrao do GameAbsenceAlerts):
+
+```typescript
+{generatedMessage && (
+  <Card className="mt-4">
+    <CardHeader>
+      <CardTitle>Mensagem Gerada</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="space-y-4">
+        <div className="whitespace-pre-wrap p-4 bg-gray-100 dark:bg-gray-800 rounded">
+          {generatedMessage}
+        </div>
+        <Button onClick={shareViaWhatsApp} className="w-full">
+          <Share2 className="h-4 w-4 mr-2" />
+          Compartilhar no WhatsApp
+        </Button>
+      </div>
+    </CardContent>
+  </Card>
+)}
+```
+
+## Formato da Mensagem
 
 ```text
-MemberBirthdays (pagina)
-    |
-    +-- useMemberBirthdaysFullYear (hook)
-        |
-        +-- supabase.from('members')
-            .select('id, name, nickname, birth_date, photo_url')
-            .eq('club_id', clubId)
-            .eq('status', 'Ativo')
-            .not('birth_date', 'is', null)
+🎂 Aniversariantes de Janeiro - Nome do Clube
+
+🎈 05/01 - Apelido1
+🎈 12/01 - Apelido2
+🎈 20/01 - Nome3
+🎈 28/01 - Apelido4
+
+Parabens a todos! 🎉🥳
 ```
 
-## Arquivos a Criar
+## Estrutura Visual Final
 
-| Arquivo | Descricao |
-|---------|-----------|
-| `src/hooks/useMemberBirthdaysFullYear.ts` | Hook para buscar aniversarios do ano |
-| `src/pages/MemberBirthdays.tsx` | Pagina de listagem de aniversariantes |
+```text
++-- Cabecalho
+|   +-- Titulo "Aniversariantes"
+|   +-- Seletor de mes
+|   +-- Botao "Gerar Mensagem"
+|
++-- Card Aniversariantes
+|   +-- Tabela com lista
+|
++-- Card Mensagem Gerada (condicional)
+    +-- Preview da mensagem
+    +-- Botao "Compartilhar no WhatsApp"
+```
 
-## Arquivos a Modificar
-
-| Arquivo | Alteracao |
-|---------|-----------|
-| `src/components/AdminLayout.tsx` | Adicionar item "Aniversariantes" no submenu Socios |
-| `src/App.tsx` | Adicionar rota `/members/birthdays` |
-
-## Resultado Final
+## Resultado Esperado
 
 O usuario podera:
-1. Acessar o menu Socios > Aniversariantes
-2. Ver lista de todos os aniversariantes organizados por mes
-3. Navegar entre os meses do ano
-4. Identificar facilmente aniversariantes do dia atual
-5. Ver contagem de aniversariantes por mes
+1. Selecionar o mes desejado
+2. Clicar em "Gerar Mensagem" para criar o texto
+3. Visualizar o preview da mensagem
+4. Clicar em "Compartilhar no WhatsApp" para enviar
 
