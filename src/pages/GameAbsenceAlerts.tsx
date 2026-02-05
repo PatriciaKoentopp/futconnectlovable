@@ -94,6 +94,7 @@ const GameAbsenceAlerts = () => {
               game_participants!inner(status)
             `)
             .eq('club_id', user.activeClub.id)
+            .eq('status', 'completed')
             .eq('game_participants.member_id', absence.member_id)
             .lt('date', lastGame.date)
             .order('date', { ascending: false });
