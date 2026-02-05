@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 
 const MONTHS = [
+  { value: 'all', label: 'Todos os meses' },
   { value: '1', label: 'Janeiro' },
   { value: '2', label: 'Fevereiro' },
   { value: '3', label: 'Março' },
@@ -25,6 +26,12 @@ const MONTHS = [
   { value: '12', label: 'Dezembro' },
 ];
 
+const MONTH_NAMES: Record<number, string> = {
+  1: 'Janeiro', 2: 'Fevereiro', 3: 'Março', 4: 'Abril',
+  5: 'Maio', 6: 'Junho', 7: 'Julho', 8: 'Agosto',
+  9: 'Setembro', 10: 'Outubro', 11: 'Novembro', 12: 'Dezembro'
+};
+
 const MemberBirthdays = () => {
   const currentMonth = new Date().getMonth() + 1;
   const currentDay = new Date().getDate();
@@ -35,8 +42,10 @@ const MemberBirthdays = () => {
   const { user } = useAuth();
   const { data: birthdaysByMonth, isLoading } = useMemberBirthdaysFullYear();
 
-  const selectedMonthBirthdays = birthdaysByMonth?.[Number(selectedMonth)] || [];
-  const selectedMonthName = MONTHS.find(m => m.value === selectedMonth)?.label || '';
+  const selectedMonthBirthdays = selectedMonth === 'all'
+    ? Object.values(birthdaysByMonth || {}).flat().sort((a, b) => a.month - b.month || a.day - b.day)
+    : birthdaysByMonth?.[Number(selectedMonth)] || [];
+  const selectedMonthName = selectedMonth === 'all' ? 'Todos os meses' : MONTHS.find(m => m.value === selectedMonth)?.label || '';
 
   const generateBirthdayMessage = () => {
     if (selectedMonthBirthdays.length === 0) {
@@ -48,11 +57,14 @@ const MemberBirthdays = () => {
       return;
     }
 
-    const intro = `🎂 Aniversariantes de ${selectedMonthName} - ${user?.activeClub?.name || 'Clube'}\n\n`;
+    const intro = selectedMonth === 'all'
+      ? `🎂 Aniversariantes do Ano - ${user?.activeClub?.name || 'Clube'}\n\n`
+      : `🎂 Aniversariantes de ${selectedMonthName} - ${user?.activeClub?.name || 'Clube'}\n\n`;
     
     const birthdayList = selectedMonthBirthdays
       .map(member => {
-        return `🎈 ${String(member.day).padStart(2, '0')}/${selectedMonth.padStart(2, '0')} - ${member.name}`;
+        const monthStr = String(member.month).padStart(2, '0');
+        return `🎈 ${String(member.day).padStart(2, '0')}/${monthStr} - ${member.name}`;
       })
       .join('\n');
 
@@ -109,7 +121,9 @@ const MemberBirthdays = () => {
             </SelectTrigger>
             <SelectContent>
               {MONTHS.map((month) => {
-                const count = birthdaysByMonth?.[Number(month.value)]?.length || 0;
+                const count = month.value === 'all'
+                  ? Object.values(birthdaysByMonth || {}).flat().length
+                  : birthdaysByMonth?.[Number(month.value)]?.length || 0;
                 return (
                   <SelectItem key={month.value} value={month.value}>
                     {month.label} {count > 0 && `(${count})`}
@@ -157,7 +171,7 @@ const MemberBirthdays = () => {
                   <TableHead className="w-[60px]">Foto</TableHead>
                   <TableHead>Nome</TableHead>
                   <TableHead>Apelido</TableHead>
-                  <TableHead className="text-center w-[100px]">Dia</TableHead>
+                  <TableHead className="text-center w-[100px]">Data</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -187,8 +201,8 @@ const MemberBirthdays = () => {
                       <TableCell className="text-gray-600">
                         {member.nickname || '-'}
                       </TableCell>
-                      <TableCell className="text-center font-semibold">
-                        {String(member.day).padStart(2, '0')}
+                      <TableCell className="text-center font-semibold whitespace-nowrap">
+                        {String(member.day).padStart(2, '0')}/{String(member.month).padStart(2, '0')}
                       </TableCell>
                     </TableRow>
                   );
