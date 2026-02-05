@@ -53,6 +53,10 @@ const clubNavItems = [{
     path: '/members/birthdays',
     icon: <Calendar size={16} />
   }, {
+    name: 'Aniv. de Clube',
+    path: '/members/club-anniversaries',
+    icon: <Award size={16} />
+  }, {
     name: 'Patrocinador',
     path: '/sponsors',
     icon: <Award size={16} />
