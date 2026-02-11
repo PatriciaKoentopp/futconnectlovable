@@ -37,6 +37,7 @@ export function GameStatisticsModal({ isOpen, onClose, gameId }: GameStatisticsM
   const [totalSaves, setTotalSaves] = useState(0);
   const [totalGoals, setTotalGoals] = useState(0);
   const [teamConfigurations, setTeamConfigurations] = useState<TeamConfiguration[]>([]);
+  const [hasTeamFormation, setHasTeamFormation] = useState(false);
   const { toast } = useToast();
   const isMobile = useIsMobile();
   
@@ -116,6 +117,7 @@ export function GameStatisticsModal({ isOpen, onClose, gameId }: GameStatisticsM
       let activeTeams: string[] = [];
       
       if (teamFormations && teamFormations.length > 0) {
+        setHasTeamFormation(true);
         const teamFormationId = teamFormations[0].id;
         
         // Fetch team members from the active team formation
@@ -147,42 +149,10 @@ export function GameStatisticsModal({ isOpen, onClose, gameId }: GameStatisticsM
         setTeamPlayers(players);
         activeTeams = Array.from(teamsSet);
       } else {
-        // If no active team formation, use confirmed game participants
-        const { data: participants, error } = await supabase
-          .from('game_participants')
-          .select('member_id, status, members(id, name, nickname, status)')
-          .eq('game_id', gameId)
-          .eq('status', 'confirmed');
-        
-        if (error) throw error;
-        
-        const allMembers = participants.map(p => ({
-          id: p.member_id,
-          name: p.members?.name || 'Unknown',
-          nickname: p.members?.nickname || p.members?.name || 'Unknown'
-        }));
-        
-        // Get team configurations for the club
-        const { data: teamConfigs } = await supabase
-          .from('team_configurations')
-          .select('*')
-          .eq('club_id', gameData?.club_id)
-          .eq('is_active', true)
-          .order('created_at', { ascending: true })
-          .limit(2);
-        
-        // Use the first two active team configurations or fallback to default
-        const team1 = teamConfigs?.[0]?.id || 'yellow';
-        const team2 = teamConfigs?.[1]?.id || 'black';
-        activeTeams = [team1, team2];
-        
-        const halfLength = Math.ceil(allMembers.length / 2);
-        const teamPlayersData = {
-          [team1]: allMembers.slice(0, halfLength),
-          [team2]: allMembers.slice(halfLength)
-        };
-        
-        setTeamPlayers(teamPlayersData);
+        // No active team formation - don't create fake teams
+        setTeamPlayers({});
+        setHasTeamFormation(false);
+        activeTeams = [];
       }
 
       // Initialize scores with 0 for all active teams
@@ -674,111 +644,115 @@ export function GameStatisticsModal({ isOpen, onClose, gameId }: GameStatisticsM
           </div>
         ) : (
           <div className="flex flex-col space-y-4 py-4">
-            {/* Placar */}
-            <div className="bg-gray-50 p-4 rounded-md">
-              <h3 className="text-sm font-medium text-gray-500 mb-3 text-center uppercase">Placar</h3>
-              
-              <div className="flex justify-center items-center space-x-4">
-                {Object.entries(teamScores).slice(0, 2).map(([team, score], index) => (
-                  <div key={team} className="flex items-center">
-                    <div className="flex flex-col items-center">
-                      <div
-                        className="w-16 h-16 rounded-md flex items-center justify-center text-white font-bold"
-                        style={{ 
-                          backgroundColor: getTeamColor(team),
-                          color: getTeamColor(team) === '#ffffff' ? '#333' : 'white'
-                        }}
-                      >
-                        {score}
-                      </div>
-                      <span className="mt-1 text-xs font-medium">{getTeamName(team)}</span>
-                    </div>
-                    
-                    {index === 0 && Object.entries(teamScores).length > 1 && (
-                      <div className="text-xl font-bold text-gray-400 ml-4 mr-4">×</div>
-                    )}
-                  </div>
-                ))}
+            {!hasTeamFormation ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p className="font-medium">Times não formados</p>
+                <p className="text-sm">Forme os times para ver as estatísticas detalhadas.</p>
               </div>
-            </div>
-            
-            {/* Resumo */}
-            <div className="flex flex-col space-y-4">
-              {/* Card de Resumo */}
-              <div className="bg-gray-50 p-4 rounded-md w-full">
-                <h3 className="text-sm font-medium text-gray-500 mb-3">Resumo</h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center">
-                      <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-2">
-                        <Goal className="h-4 w-4 text-green-600" />
+            ) : (
+              <>
+                {/* Placar */}
+                <div className="bg-gray-50 p-4 rounded-md">
+                  <h3 className="text-sm font-medium text-gray-500 mb-3 text-center uppercase">Placar</h3>
+                  <div className="flex justify-center items-center space-x-4">
+                    {Object.entries(teamScores).slice(0, 2).map(([team, score], index) => (
+                      <div key={team} className="flex items-center">
+                        <div className="flex flex-col items-center">
+                          <div
+                            className="w-16 h-16 rounded-md flex items-center justify-center text-white font-bold"
+                            style={{ 
+                              backgroundColor: getTeamColor(team),
+                              color: getTeamColor(team) === '#ffffff' ? '#333' : 'white'
+                            }}
+                          >
+                            {score}
+                          </div>
+                          <span className="mt-1 text-xs font-medium">{getTeamName(team)}</span>
+                        </div>
+                        {index === 0 && Object.entries(teamScores).length > 1 && (
+                          <div className="text-xl font-bold text-gray-400 ml-4 mr-4">×</div>
+                        )}
                       </div>
-                      <span>Total de Gols</span>
-                    </div>
-                    <Badge variant="outline" className="text-lg font-semibold">{totalGoals}</Badge>
-                  </div>
-                  
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center">
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-2">
-                        <ShieldAlert className="h-4 w-4 text-blue-600" />
-                      </div>
-                      <span>Total de Defesas</span>
-                    </div>
-                    <Badge variant="outline" className="text-lg font-semibold">{totalSaves}</Badge>
+                    ))}
                   </div>
                 </div>
-              </div>
+                
+                {/* Resumo */}
+                <div className="flex flex-col space-y-4">
+                  <div className="bg-gray-50 p-4 rounded-md w-full">
+                    <h3 className="text-sm font-medium text-gray-500 mb-3">Resumo</h3>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center">
+                          <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-2">
+                            <Goal className="h-4 w-4 text-green-600" />
+                          </div>
+                          <span>Total de Gols</span>
+                        </div>
+                        <Badge variant="outline" className="text-lg font-semibold">{totalGoals}</Badge>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center">
+                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-2">
+                            <ShieldAlert className="h-4 w-4 text-blue-600" />
+                          </div>
+                          <span>Total de Defesas</span>
+                        </div>
+                        <Badge variant="outline" className="text-lg font-semibold">{totalSaves}</Badge>
+                      </div>
+                    </div>
+                  </div>
 
-              {/* Card de Jogadores */}
-              <div className="bg-gray-50 p-4 rounded-md w-full">
-                <h3 className="text-sm font-medium text-gray-500 mb-3">Jogadores</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {Object.entries(teamPlayers).map(([team, players]) => (
-                    <div key={team} className="space-y-2">
-                      <div
-                        className="text-sm font-medium p-2 rounded"
-                        style={{
-                          backgroundColor: getTeamColor(team),
-                          color: getTeamColor(team) === '#ffffff' ? '#333' : 'white'
-                        }}
-                      >
-                        {getTeamName(team)}
-                      </div>
-                      
-                      <div className="space-y-1">
-                        {players.map((player) => {
-                          const stats = calculatePlayerStats().get(player.id);
-                          return (
-                            <div
-                              key={player.id}
-                              className="flex items-center justify-between p-2 hover:bg-gray-100 rounded-md cursor-pointer"
-                              onClick={() => handlePlayerClick(player, team)}
-                            >
-                              <span className="font-medium">{player.nickname}</span>
-                              <div className="flex items-center space-x-3 text-sm">
-                                <span title="Gols" className="flex items-center">
-                                  <Goal className="h-4 w-4 text-green-600 mr-1" />
-                                  {stats?.goals || 0}
-                                </span>
-                                <span title="Gols Contra" className="flex items-center">
-                                  <AlertTriangle className="h-4 w-4 text-yellow-600 mr-1" />
-                                  {stats?.ownGoals || 0}
-                                </span>
-                                <span title="Defesas" className="flex items-center">
-                                  <ShieldAlert className="h-4 w-4 text-blue-600 mr-1" />
-                                  {stats?.saves || 0}
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
+                  <div className="bg-gray-50 p-4 rounded-md w-full">
+                    <h3 className="text-sm font-medium text-gray-500 mb-3">Jogadores</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {Object.entries(teamPlayers).map(([team, players]) => (
+                        <div key={team} className="space-y-2">
+                          <div
+                            className="text-sm font-medium p-2 rounded"
+                            style={{
+                              backgroundColor: getTeamColor(team),
+                              color: getTeamColor(team) === '#ffffff' ? '#333' : 'white'
+                            }}
+                          >
+                            {getTeamName(team)}
+                          </div>
+                          <div className="space-y-1">
+                            {players.map((player) => {
+                              const stats = calculatePlayerStats().get(player.id);
+                              return (
+                                <div
+                                  key={player.id}
+                                  className="flex items-center justify-between p-2 hover:bg-gray-100 rounded-md cursor-pointer"
+                                  onClick={() => handlePlayerClick(player, team)}
+                                >
+                                  <span className="font-medium">{player.nickname}</span>
+                                  <div className="flex items-center space-x-3 text-sm">
+                                    <span title="Gols" className="flex items-center">
+                                      <Goal className="h-4 w-4 text-green-600 mr-1" />
+                                      {stats?.goals || 0}
+                                    </span>
+                                    <span title="Gols Contra" className="flex items-center">
+                                      <AlertTriangle className="h-4 w-4 text-yellow-600 mr-1" />
+                                      {stats?.ownGoals || 0}
+                                    </span>
+                                    <span title="Defesas" className="flex items-center">
+                                      <ShieldAlert className="h-4 w-4 text-blue-600 mr-1" />
+                                      {stats?.saves || 0}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  </div>
                 </div>
-              </div>
-            </div>
+              </>
+            )}
             
             {/* Lista de eventos */}
             <div className="bg-gray-50 p-4 rounded-md w-full">
