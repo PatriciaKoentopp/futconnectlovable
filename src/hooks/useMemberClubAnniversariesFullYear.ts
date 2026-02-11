@@ -46,10 +46,10 @@ export const useMemberClubAnniversariesFullYear = () => {
       // Group members by registration month
       data?.forEach((member) => {
         if (member.registration_date) {
-          const date = new Date(member.registration_date);
-          const month = date.getMonth() + 1; // JavaScript months are 0-indexed
-          const day = date.getDate();
-          const registrationYear = date.getFullYear();
+          const [yearStr, monthStr, dayStr] = member.registration_date.split('-');
+          const day = parseInt(dayStr, 10);
+          const month = parseInt(monthStr, 10);
+          const registrationYear = parseInt(yearStr, 10);
           const years = currentYear - registrationYear;
 
           anniversariesByMonth[month].push({
