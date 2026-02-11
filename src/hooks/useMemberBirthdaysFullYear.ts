@@ -44,9 +44,9 @@ export const useMemberBirthdaysFullYear = () => {
       // Group members by birth month
       data?.forEach((member) => {
         if (member.birth_date) {
-          const date = new Date(member.birth_date);
-          const month = date.getMonth() + 1; // JavaScript months are 0-indexed
-          const day = date.getDate();
+          const [, monthStr, dayStr] = member.birth_date.split('-');
+          const month = parseInt(monthStr, 10);
+          const day = parseInt(dayStr, 10);
 
           birthdaysByMonth[month].push({
             ...member,
