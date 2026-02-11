@@ -1,30 +1,63 @@
 
 
-# Corrigir parsing de data na pagina de aniversariantes
+# Corrigir estatisticas mostrando informacao aleatoria sem formacao de times
 
 ## Problema
 
-No hook `useMemberBirthdaysFullYear.ts`, a linha 43 usa `new Date(member.birth_date)` que aplica conversao de timezone, causando datas incorretas.
+Na pagina `/games`, ao clicar em "Ver Estatisticas" para um jogo que nao teve formacao de times, o modal divide os jogadores confirmados ao meio e os distribui aleatoriamente em dois times (linhas 149-186 do `GameStatisticsModal.tsx`). Isso mostra informacao falsa ao usuario.
 
 ## Solucao
 
-Mesmo ajuste aplicado no hook de aniversariantes de clube: substituir `new Date()` pelo parsing direto da string `YYYY-MM-DD`.
+Quando nao houver formacao de times ativa para o jogo, exibir uma mensagem informativa no modal indicando que os times ainda nao foram formados, em vez de gerar times aleatorios. O modal continuara exibindo os eventos (gols, defesas) ja registrados, mas sem a divisao ficticia por times.
 
 ## Arquivo a Modificar
 
-**`src/hooks/useMemberBirthdaysFullYear.ts`** - Linhas 43-45
+**`src/components/GameStatisticsModal.tsx`**
 
-De:
+### Alteracao 1: Bloco sem formacao de times (linhas 149-186)
+
+Quando `teamFormations` estiver vazio, em vez de dividir jogadores ao meio:
+- Definir `teamPlayers` como objeto vazio `{}`
+- Definir `activeTeams` como array vazio `[]`
+- Adicionar um estado `hasTeamFormation` (boolean) para controlar se ha formacao
+
+### Alteracao 2: Renderizacao condicional no modal
+
+Onde o modal renderiza as colunas de times e placar:
+- Se `hasTeamFormation` for `false`, exibir uma mensagem: "Os times ainda nao foram formados para este jogo. Forme os times para ver as estatisticas detalhadas."
+- Se `hasTeamFormation` for `true`, manter o comportamento atual
+
+### Detalhes tecnicos
+
 ```typescript
-const date = new Date(member.birth_date);
-const month = date.getMonth() + 1;
-const day = date.getDate();
+// Novo estado
+const [hasTeamFormation, setHasTeamFormation] = useState(false);
+
+// No bloco else (sem formacao):
+} else {
+  setTeamPlayers({});
+  setHasTeamFormation(false);
+  activeTeams = [];
+}
+
+// No bloco com formacao:
+if (teamFormations && teamFormations.length > 0) {
+  setHasTeamFormation(true);
+  // ... codigo existente
+}
 ```
 
-Para:
+Na renderizacao, envolver a secao de times/placar com a condicional:
+
 ```typescript
-const [, monthStr, dayStr] = member.birth_date.split('-');
-const month = parseInt(monthStr, 10);
-const day = parseInt(dayStr, 10);
+{!hasTeamFormation ? (
+  <div className="text-center py-8 text-muted-foreground">
+    <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
+    <p className="font-medium">Times nao formados</p>
+    <p className="text-sm">Forme os times para ver as estatisticas detalhadas.</p>
+  </div>
+) : (
+  // ... renderizacao atual dos times e placar
+)}
 ```
 
